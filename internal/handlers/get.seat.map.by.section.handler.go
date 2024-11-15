@@ -17,17 +17,15 @@ const (
 func (h *ticketServiceHandlers) ViewSeatMap(ctx context.Context, vsm *bookingv1.ViewSeatMapRequest) (*bookingv1.ViewSeatMapResponse, error) {
 	seats, err := h.svc.ViewSeatMap(ctx, vsm.GetSection().String())
 
-	s := []*bookingv1.Seat{}
-	vsmResponse := &bookingv1.ViewSeatMapResponse{}
-
 	if err != nil {
 		if errors.Is(err, models.ErrInvalidSection) {
 			return nil, status.Errorf(codes.InvalidArgument, err.Error())
 		}
-		vsmResponse.Seats = s
-		vsmResponse.Message = err.Error()
-		return vsmResponse, nil
+		return nil, status.New(codes.Unknown, "some unknow error happened").Err()
 	}
+
+	s := []*bookingv1.Seat{}
+	vsmResponse := &bookingv1.ViewSeatMapResponse{}
 
 	vsmResponse.Success = true
 	vsmResponse.Message = successViewMapMessage

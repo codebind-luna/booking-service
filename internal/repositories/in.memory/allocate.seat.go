@@ -6,13 +6,14 @@ import (
 	"math/rand"
 
 	"github.com/codebind-luna/booking-service/internal/domain/models"
+	"github.com/codebind-luna/booking-service/internal/exceptions"
 )
 
 func (ir *InMemoryRepository) allocateSeat() (*models.Seat, error) {
 	// Find all empty spots
 	emptySpots := ir.findEmptySpots()
 	if len(emptySpots) == 0 {
-		return nil, ErrNoSeatsAvailable
+		return nil, exceptions.ErrNoSeatsAvailable
 	}
 
 	// Seed the random number generator

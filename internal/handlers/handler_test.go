@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"net"
 	"testing"
@@ -9,6 +10,7 @@ import (
 
 	bookingv1 "github.com/codebind-luna/booking-service/gen/go/booking/v1"
 	"github.com/codebind-luna/booking-service/internal/app"
+	"github.com/codebind-luna/booking-service/internal/constants"
 	"github.com/codebind-luna/booking-service/internal/domain"
 	"github.com/codebind-luna/booking-service/internal/repositories"
 	"github.com/codebind-luna/booking-service/pkg/logger"
@@ -36,7 +38,7 @@ func setup(t *testing.T) (context.Context, *grpc.ClientConn, bookingv1.TicketSer
 	logger := logger.ConfigureLogging()
 
 	// Set up the repository (in-memory in this case)
-	repoType, repoErr := domain.ParseRepository("in-memory")
+	repoType, repoErr := domain.ParseRepository(constants.DefaultRepositoryType)
 	if repoErr != nil {
 		t.Fatal(repoErr.Error()) // Fail the test if there is an error parsing the repository type
 	}
@@ -112,7 +114,7 @@ func TestTicketService_PurchaseTicket(t *testing.T) {
 
 	// Assert that there were no errors and that the response is as expected
 	assert.NoError(t, err, "Expected no error, but got one")
-	assert.Equal(t, successPurchaseTicketMessage, res.GetMessage(), "Expected success message, but got a different message")
+	assert.Equal(t, constants.SuccessPurchaseTicketMessage, res.GetMessage(), "Expected success message, but got a different message")
 	assert.Equal(t, true, res.GetSuccess(), "Expected success flag to be true")
 }
 
@@ -134,6 +136,9 @@ func TestTicketService_GetReceipt(t *testing.T) {
 			email: "adam@gmail.com",
 			fn:    "Adam",
 			ln:    "Lesiuk",
+			fc:    "New York",
+			tc:    "New Jersey",
+			p:     20.00,
 		},
 	}
 
@@ -155,14 +160,14 @@ func TestTicketService_GetReceipt(t *testing.T) {
 
 	// Assert that there were no errors and that the response is as expected
 	assert.NoError(t, rErr, "Expected no error, but got one")
-	assert.Equal(t, successGetReceiptMessage, receipt.GetMessage(), "Expected success message, but got a different message")
+	assert.Equal(t, constants.SuccessGetReceiptMessage, receipt.GetMessage(), "Expected success message, but got a different message")
 	assert.Equal(t, true, receipt.GetSuccess(), "Expected success flag to be true")
 	assert.Equal(t, details[0].email, receipt.GetDetails().GetUser().GetEmail())
 	assert.Equal(t, details[0].fn, receipt.GetDetails().GetUser().GetFirstName())
 	assert.Equal(t, details[0].ln, receipt.GetDetails().GetUser().GetLastName())
 	assert.Equal(t, details[0].fc, receipt.GetDetails().GetFromCity())
 	assert.Equal(t, details[0].tc, receipt.GetDetails().GetToCity())
-	assert.Equal(t, details[0].p, receipt.GetDetails().GetPrice())
+	assert.Equal(t, fmt.Sprintf("$%.2f", details[0].p), receipt.GetDetails().GetPrice())
 	assert.NotEmpty(t, receipt.GetDetails().GetBookingId(), "Expected booking id to be not empty")
 }
 
@@ -269,7 +274,7 @@ func TestTicketService_RemoveUser(t *testing.T) {
 	})
 
 	assert.NoError(t, rErr, "Expected no error, but got one")
-	assert.Equal(t, successRemoveUserMessage, res.GetMessage(), "Expected success message, but got a different message")
+	assert.Equal(t, constants.SuccessRemoveUserMessage, res.GetMessage(), "Expected success message, but got a different message")
 	assert.Equal(t, true, res.GetSuccess(), "Expected success flag to be true")
 	assert.Empty(t, seatMap.GetSeats()[seatNo-1].GetEmail(), "Expected status set to be available")
 	assert.Equal(t, bookingv1.Status_STATUS_AVAILABLE, seatMap.GetSeats()[seatNo-1].Status, "Expected status set to be available")
@@ -333,7 +338,7 @@ func TestTicketService_ModifySeat(t *testing.T) {
 	})
 
 	assert.NoError(t, mErr, "Expected no error, but got one")
-	assert.Equal(t, successModifySeatMessage, res.GetMessage(), "Expected success message, but got a different message")
+	assert.Equal(t, constants.SuccessModifySeatMessage, res.GetMessage(), "Expected success message, but got a different message")
 	assert.Equal(t, true, res.GetSuccess(), "Expected success flag to be true")
 	assert.Equal(t, details[0].email, seatMap.GetSeats()[rSeatNo-1].GetEmail(), "Expected email to be set correctly")
 	assert.Empty(t, seatMap.GetSeats()[seatNo-1].GetEmail(), "Expected email to be empty")

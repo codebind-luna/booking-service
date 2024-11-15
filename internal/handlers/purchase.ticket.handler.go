@@ -2,12 +2,13 @@ package handlers
 
 import (
 	"context"
+	"errors"
 
 	bookingv1 "github.com/codebind-luna/booking-service/gen/go/booking/v1"
-)
-
-const (
-	successPurchaseTicketMessage string = "successfully purchased ticket"
+	"github.com/codebind-luna/booking-service/internal/constants"
+	"github.com/codebind-luna/booking-service/internal/exceptions"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 func (h *ticketServiceHandlers) PurchaseTicket(ctx context.Context, pr *bookingv1.PurchaseTicketRequest) (*bookingv1.PurchaseTicketResponse, error) {
@@ -18,14 +19,17 @@ func (h *ticketServiceHandlers) PurchaseTicket(ctx context.Context, pr *bookingv
 
 	bookingID, err := h.svc.PurchaseTicket(ctx, user.GetEmail(), user.GetFirstName(), user.GetLastName(), fromCity, toCity, float64(price))
 
-	r := &bookingv1.PurchaseTicketResponse{}
 	if err != nil {
-		r.Message = err.Error()
-		return r, nil
+		if errors.Is(err, exceptions.ErrNoSeatsAvailable) {
+			return nil, status.New(codes.FailedPrecondition, "No seats available").Err()
+		}
+
+		return nil, status.New(codes.Unknown, "some unknow error happened").Err()
 	}
 
+	r := &bookingv1.PurchaseTicketResponse{}
 	r.BookingId = *bookingID
-	r.Message = successPurchaseTicketMessage
+	r.Message = constants.SuccessPurchaseTicketMessage
 	r.Success = true
 
 	return r, nil

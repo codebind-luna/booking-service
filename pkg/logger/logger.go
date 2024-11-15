@@ -9,6 +9,8 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+const DefaultLogLevel = log.InfoLevel
+
 func setTextFormatter() *log.TextFormatter {
 	formatter := &log.TextFormatter{FullTimestamp: true}
 	return formatter
@@ -37,7 +39,14 @@ func ConfigureLogging() *log.Logger {
 	// Set log level
 	logLevel, _ := os.LookupEnv(constants.EnvLogLevel)
 
-	level, _ := log.ParseLevel(logLevel)
+	level, err := log.ParseLevel(logLevel)
+	if err != nil {
+		level = DefaultLogLevel
+		logger.WithFields(map[string]interface{}{
+			"defaultLevel": DefaultLogLevel.String(),
+			"configLevel":  logLevel,
+		}).WithError(err).Warn("Error parsing log level, using default")
+	}
 
 	logger.SetLevel(level)
 	return logger

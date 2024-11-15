@@ -1,19 +1,12 @@
 package inmemoryrepository
 
 import (
-	"errors"
 	"os"
 	"strconv"
 	"sync"
 
 	"github.com/codebind-luna/booking-service/internal/constants"
 	"github.com/codebind-luna/booking-service/internal/domain/models"
-)
-
-var (
-	ErrNoSeatsAvailable      = errors.New("sorry all seats are booked")
-	ErrUserNotFound          = errors.New("user not found")
-	ErrNoBookingFoundForUser = errors.New("no tickets are for the user")
 )
 
 // InMemoryRepository is an in-memory implementation of the Repository interface.
@@ -28,8 +21,14 @@ type InMemoryRepository struct {
 // NewInMemoryTicketRepository creates a new instance of InMemoryTicketRepository.
 func NewInMemoryRepository() *InMemoryRepository {
 	noEachSection := os.Getenv(constants.EnvInmemorySeats)
-	n, _ := strconv.Atoi(noEachSection)
-	seatMap := models.NewSeatMap(n)
+	var seats int
+	if noEachSection == "" {
+		seats = constants.DefaultSeats
+	} else {
+		seats, _ = strconv.Atoi(noEachSection)
+	}
+
+	seatMap := models.NewSeatMap(seats)
 	return &InMemoryRepository{
 		tickets:    make(map[string]*models.Ticket),
 		seatM:      seatMap,

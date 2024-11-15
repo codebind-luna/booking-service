@@ -2,24 +2,29 @@ package handlers
 
 import (
 	"context"
+	"errors"
+	"fmt"
 
 	bookingv1 "github.com/codebind-luna/booking-service/gen/go/booking/v1"
-)
-
-const (
-	successGetReceiptMessage string = "successfully purchased ticket"
+	"github.com/codebind-luna/booking-service/internal/constants"
+	"github.com/codebind-luna/booking-service/internal/exceptions"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 func (h *ticketServiceHandlers) GetReceipt(ctx context.Context, rr *bookingv1.GetReceiptRequest) (*bookingv1.GetReceiptResponse, error) {
 	ticket, err := h.svc.GetReceipt(ctx, rr.GetEmail())
 
+	if err != nil {
+		if errors.Is(err, exceptions.ErrNoBookingFoundForUser) {
+			return nil, status.New(codes.NotFound, "No booking found").Err()
+		}
+
+		return nil, status.New(codes.Unknown, "some unknow error happened").Err()
+	}
 	res := &bookingv1.GetReceiptResponse{}
 
-	if err != nil {
-		return res, nil
-	}
-
-	res.Message = successGetReceiptMessage
+	res.Message = constants.SuccessGetReceiptMessage
 	res.Success = true
 
 	res.Details = &bookingv1.Receipt{
@@ -31,7 +36,7 @@ func (h *ticketServiceHandlers) GetReceipt(ctx context.Context, rr *bookingv1.Ge
 			FirstName: ticket.User().FirstName(),
 			LastName:  ticket.User().LastName(),
 		},
-		Price:   float32(ticket.PricePaid()),
+		Price:   fmt.Sprintf("$%.2f", ticket.PricePaid()),
 		Section: ticket.Seat().Section().Section(),
 		SeatNo:  int32(ticket.Seat().SeatNo()),
 	}

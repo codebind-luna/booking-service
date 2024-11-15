@@ -1,6 +1,9 @@
 package inmemoryrepository
 
-import "github.com/codebind-luna/booking-service/internal/domain/models"
+import (
+	"github.com/codebind-luna/booking-service/internal/domain/models"
+	"github.com/codebind-luna/booking-service/internal/exceptions"
+)
 
 func (ir *InMemoryRepository) RemoveUser(email string) error {
 	ir.mu.Lock()
@@ -8,12 +11,12 @@ func (ir *InMemoryRepository) RemoveUser(email string) error {
 
 	u, exists := ir.users[email]
 	if !exists {
-		return ErrUserNotFound
+		return exceptions.ErrNoBookingFoundForUser
 	}
 
 	t, ok := ir.userTicket[u.ID()]
 	if !ok {
-		return ErrNoBookingFoundForUser
+		return exceptions.ErrNoBookingFoundForUser
 	}
 
 	seat := t.Seat()

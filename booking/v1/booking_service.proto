@@ -18,7 +18,7 @@ message Receipt {
     string from_city = 2;     // Departure city
     string to_city = 3;       // Destination city
     User user = 4;            // User info
-    float price = 5;          // Ticket price
+    string price = 5;          // Ticket price
     Section section = 6; // Section of seat allocated
     int32 seat_no = 7; // seat no of seat allocated
 }

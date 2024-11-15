@@ -1,14 +1,8 @@
 package inmemoryrepository
 
 import (
-	"errors"
-
 	"github.com/codebind-luna/booking-service/internal/domain/models"
-)
-
-var (
-	ErrSeatNotFound            = errors.New("seat not found")
-	ErrSeatNotAvailableAnymore = errors.New("sorry requested seat is not available")
+	"github.com/codebind-luna/booking-service/internal/exceptions"
 )
 
 func (ir *InMemoryRepository) isValidSeat(seatNo int) bool {
@@ -28,18 +22,18 @@ func (ir *InMemoryRepository) ModifySeat(email string, section string, seatNo in
 
 	u, exists := ir.users[email]
 	if !exists {
-		return ErrUserNotFound
+		return exceptions.ErrNoBookingFoundForUser
 	}
 
 	t, ok := ir.userTicket[u.ID()]
 	if !ok {
-		return ErrNoBookingFoundForUser
+		return exceptions.ErrNoBookingFoundForUser
 	}
 
 	seatIdx := seatNo - 1
 
 	if !ir.isValidSeat(seatNo) {
-		return ErrSeatNotFound
+		return exceptions.ErrSeatNotFound
 	}
 
 	spot := ir.seatM.Seats()[s.EnumIndex()][seatIdx]
@@ -54,5 +48,5 @@ func (ir *InMemoryRepository) ModifySeat(email string, section string, seatNo in
 		return nil
 	}
 
-	return ErrSeatNotAvailableAnymore
+	return exceptions.ErrSeatNotAvailableAnymore
 }
