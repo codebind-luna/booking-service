@@ -218,3 +218,125 @@ func TestTicketService_ViewSeatMap(t *testing.T) {
 	assert.Equal(t, section, res.GetSeats()[seatNo-1].Section, "Expected section to be set correctly")
 	assert.Equal(t, bookingv1.Status_STATUS_BOOKED, res.GetSeats()[seatNo-1].Status, "Expected status set to be booked")
 }
+
+func TestTicketService_RemoveUser(t *testing.T) {
+	// Call the setup function to initialize resources
+	ctx, _, c, cleanup := setup(t)
+	// Ensure cleanup happens after the test finishes
+	defer cleanup()
+
+	// Call the PurchaseTicket method on the client
+	details := []struct {
+		email string
+		fn    string
+		ln    string
+		fc    string
+		tc    string
+		p     float32
+	}{
+		{
+			email: "adam@gmail.com",
+			fn:    "Adam",
+			ln:    "Lesiuk",
+		},
+	}
+
+	// Call the PurchaseTicket method on the client
+	c.PurchaseTicket(ctx, &bookingv1.PurchaseTicketRequest{
+		User: &bookingv1.User{
+			Email:     details[0].email,
+			FirstName: details[0].fn,
+			LastName:  details[0].ln,
+		},
+		FromCity: details[0].fc,
+		ToCity:   details[0].tc,
+		Price:    details[0].p,
+	})
+
+	receipt, _ := c.GetReceipt(ctx, &bookingv1.GetReceiptRequest{
+		Email: details[0].email,
+	})
+
+	section := receipt.GetDetails().GetSection()
+	seatNo := receipt.GetDetails().GetSeatNo()
+
+	res, rErr := c.RemoveUser(ctx, &bookingv1.RemoveUserRequest{
+		Email: details[0].email,
+	})
+
+	seatMap, _ := c.ViewSeatMap(ctx, &bookingv1.ViewSeatMapRequest{
+		Section: section,
+	})
+
+	assert.NoError(t, rErr, "Expected no error, but got one")
+	assert.Equal(t, successRemoveUserMessage, res.GetMessage(), "Expected success message, but got a different message")
+	assert.Equal(t, true, res.GetSuccess(), "Expected success flag to be true")
+	assert.Empty(t, seatMap.GetSeats()[seatNo-1].GetEmail(), "Expected status set to be available")
+	assert.Equal(t, bookingv1.Status_STATUS_AVAILABLE, seatMap.GetSeats()[seatNo-1].Status, "Expected status set to be available")
+}
+
+func TestTicketService_ModifySeat(t *testing.T) {
+	// Call the setup function to initialize resources
+	ctx, _, c, cleanup := setup(t)
+	// Ensure cleanup happens after the test finishes
+	defer cleanup()
+
+	// Call the PurchaseTicket method on the client
+	details := []struct {
+		email string
+		fn    string
+		ln    string
+		fc    string
+		tc    string
+		p     float32
+	}{
+		{
+			email: "adam@gmail.com",
+			fn:    "Adam",
+			ln:    "Lesiuk",
+		},
+	}
+
+	// Call the PurchaseTicket method on the client
+	c.PurchaseTicket(ctx, &bookingv1.PurchaseTicketRequest{
+		User: &bookingv1.User{
+			Email:     details[0].email,
+			FirstName: details[0].fn,
+			LastName:  details[0].ln,
+		},
+		FromCity: details[0].fc,
+		ToCity:   details[0].tc,
+		Price:    details[0].p,
+	})
+
+	receipt, _ := c.GetReceipt(ctx, &bookingv1.GetReceiptRequest{
+		Email: details[0].email,
+	})
+
+	section := receipt.GetDetails().GetSection()
+	seatNo := receipt.GetDetails().GetSeatNo()
+
+	rSeatNo := 1
+
+	if seatNo == 1 {
+		rSeatNo = 2
+	}
+
+	res, mErr := c.ModifySeat(ctx, &bookingv1.ModifySeatRequest{
+		Email:   details[0].email,
+		Section: section,
+		SeatNo:  int32(rSeatNo),
+	})
+
+	seatMap, _ := c.ViewSeatMap(ctx, &bookingv1.ViewSeatMapRequest{
+		Section: section,
+	})
+
+	assert.NoError(t, mErr, "Expected no error, but got one")
+	assert.Equal(t, successModifySeatMessage, res.GetMessage(), "Expected success message, but got a different message")
+	assert.Equal(t, true, res.GetSuccess(), "Expected success flag to be true")
+	assert.Equal(t, details[0].email, seatMap.GetSeats()[rSeatNo-1].GetEmail(), "Expected email to be set correctly")
+	assert.Empty(t, seatMap.GetSeats()[seatNo-1].GetEmail(), "Expected email to be empty")
+	assert.Equal(t, bookingv1.Status_STATUS_AVAILABLE, seatMap.GetSeats()[seatNo-1].Status, "Expected status set to be available")
+	assert.Equal(t, bookingv1.Status_STATUS_BOOKED, seatMap.GetSeats()[rSeatNo-1].Status, "Expected status set to be booked")
+}

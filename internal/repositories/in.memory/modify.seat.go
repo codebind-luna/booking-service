@@ -14,7 +14,6 @@ var (
 func (ir *InMemoryRepository) isValidSeat(seatNo int) bool {
 	noOfSeatsEachSection := ir.seatM.Cols()
 	seatNo -= 1
-
 	return 0 <= seatNo && seatNo < noOfSeatsEachSection
 }
 
@@ -39,7 +38,7 @@ func (ir *InMemoryRepository) ModifySeat(email string, section string, seatNo in
 
 	seatIdx := seatNo - 1
 
-	if !ir.isValidSeat(seatIdx) {
+	if !ir.isValidSeat(seatNo) {
 		return ErrSeatNotFound
 	}
 
