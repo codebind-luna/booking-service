@@ -2,8 +2,11 @@ package inmemoryrepository
 
 import (
 	"errors"
+	"os"
+	"strconv"
 	"sync"
 
+	"github.com/codebind-luna/booking-service/internal/constants"
 	"github.com/codebind-luna/booking-service/internal/domain/models"
 )
 
@@ -23,8 +26,10 @@ type InMemoryRepository struct {
 }
 
 // NewInMemoryTicketRepository creates a new instance of InMemoryTicketRepository.
-func NewInMemoryRepository(noEachSection int) *InMemoryRepository {
-	seatMap := models.NewSeatMap(noEachSection)
+func NewInMemoryRepository() *InMemoryRepository {
+	noEachSection := os.Getenv(constants.EnvInmemorySeats)
+	n, _ := strconv.Atoi(noEachSection)
+	seatMap := models.NewSeatMap(n)
 	return &InMemoryRepository{
 		tickets:    make(map[string]*models.Ticket),
 		seatM:      seatMap,

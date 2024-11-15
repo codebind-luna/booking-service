@@ -3,6 +3,7 @@ package transport
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net"
 	"net/http"
 
@@ -25,9 +26,9 @@ type serverImp struct {
 	srv    *grpc.Server
 }
 
-func NewServer(logger *log.Logger, port int, svc bookingv1.TicketServiceServer) Server {
+func NewServer(logger *log.Logger, host string, port int, svc bookingv1.TicketServiceServer) Server {
 	// Set up a listener on port 50051
-	listener, err := net.Listen("tcp", ":50051")
+	listener, err := net.Listen("tcp", fmt.Sprintf("%s:%d", host, port))
 	if err != nil {
 		log.Fatalf("Failed to listen on port 50051: %v", err)
 	}

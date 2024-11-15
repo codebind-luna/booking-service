@@ -15,7 +15,7 @@ func New(
 ) (domain.Repository, error) {
 	switch repoType {
 	case domain.InMemoryRepository:
-		return inmemoryrepository.NewInMemoryRepository(10), nil
+		return inmemoryrepository.NewInMemoryRepository(), nil
 	default:
 		return nil, errors.New("invalid repository provided")
 	}

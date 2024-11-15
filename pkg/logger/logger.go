@@ -5,10 +5,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/codebind-luna/booking-service/internal/constants"
 	log "github.com/sirupsen/logrus"
 )
-
-const DefaultLogLevel = log.InfoLevel
 
 func setTextFormatter() *log.TextFormatter {
 	formatter := &log.TextFormatter{FullTimestamp: true}
@@ -23,7 +22,7 @@ func setJSONFormatter() *log.JSONFormatter {
 
 func ConfigureLogging() *log.Logger {
 	logger := log.New()
-	format, ok := os.LookupEnv("LOG_FORMAT")
+	format, ok := os.LookupEnv(constants.EnvLogFormat)
 	if !ok {
 		logger.SetFormatter(setTextFormatter())
 	} else {
@@ -36,16 +35,9 @@ func ConfigureLogging() *log.Logger {
 	}
 
 	// Set log level
-	logLevel, _ := os.LookupEnv("LOG_LEVEL")
+	logLevel, _ := os.LookupEnv(constants.EnvLogLevel)
 
-	level, err := log.ParseLevel(logLevel)
-	if err != nil {
-		level = DefaultLogLevel
-		logger.WithFields(map[string]interface{}{
-			"defaultLevel": DefaultLogLevel.String(),
-			"configLevel":  logLevel,
-		}).WithError(err).Warn("Error parsing log level, using default")
-	}
+	level, _ := log.ParseLevel(logLevel)
 
 	logger.SetLevel(level)
 	return logger

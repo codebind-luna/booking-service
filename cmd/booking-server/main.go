@@ -2,12 +2,15 @@ package main
 
 import (
 	"context"
+	"log"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
 
 	"github.com/codebind-luna/booking-service/internal/app"
+	"github.com/codebind-luna/booking-service/internal/config"
+	"github.com/codebind-luna/booking-service/internal/constants"
 	"github.com/codebind-luna/booking-service/internal/domain"
 	"github.com/codebind-luna/booking-service/internal/handlers"
 	"github.com/codebind-luna/booking-service/internal/repositories"
@@ -15,14 +18,16 @@ import (
 	"github.com/codebind-luna/booking-service/pkg/transport"
 )
 
-const (
-	DefaultShutdownContextWaitSeconds = 5
-)
-
 func main() {
+	config, createConfigErr := config.NewConfig()
+
+	if createConfigErr != nil {
+		log.Fatal(createConfigErr.Error())
+	}
+
 	logger := logger.ConfigureLogging()
 
-	repoType, repoErr := domain.ParseRepository("in-memory")
+	repoType, repoErr := domain.ParseRepository(config.Repository.Type)
 	if repoErr != nil {
 		logger.Fatal(repoErr.Error())
 	}
@@ -32,7 +37,7 @@ func main() {
 		logger.Fatal(rErr.Error())
 	}
 
-	server := transport.NewServer(logger, 50051, handlers.NewTicketService(app.NewService(logger, repo)))
+	server := transport.NewServer(logger, config.Server.Host, config.Server.Port, handlers.NewTicketService(app.NewService(logger, repo)))
 
 	server.Start()
 
@@ -63,7 +68,7 @@ func main() {
 	// Block until a signal is received
 	<-startShutdown
 	// Create the cancelation context
-	ctx, cancel := context.WithTimeout(context.Background(), DefaultShutdownContextWaitSeconds*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), constants.DefaultShutdownContextWaitSeconds*time.Second)
 	defer cancel()
 
 	// Wait until context times out or the server shuts down
