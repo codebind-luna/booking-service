@@ -50,4 +50,6 @@ type Repository interface {
 	CreateBooking(user *models.User, fromCity string, toCity string, price float64) (*string, error)
 	GetReceiptByUser(email string) (*models.Ticket, error)
 	GetSeatMapBySection(section string) ([]*models.Seat, error)
+	ModifySeat(email string, section string, seatNo int) error
+	RemoveUser(email string) error
 }

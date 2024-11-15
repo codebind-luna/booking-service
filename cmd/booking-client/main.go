@@ -92,7 +92,7 @@ func main() {
 		log.Printf("receipt of the ticket details for user with email %s\n: %+v\n", d.email, receipt.Details)
 	}
 
-	ss := []string{"SECTION_C"}
+	ss := []bookingv1.Section{bookingv1.Section_SECTION_A, bookingv1.Section_SECTION_B}
 
 	for _, s := range ss {
 		seatM, sErr := c.ViewSeatMap(ctx, &bookingv1.ViewSeatMapRequest{
@@ -118,12 +118,12 @@ func main() {
 			}{
 
 				seatNo: int(st.GetSeatNo()),
-				status: st.GetStatus().Enum().String(),
+				status: st.GetStatus().String(),
 			}
 			if st.GetEmail() != "" {
 				s1.user = st.GetEmail()
 			}
-			seats[s] = append(seats[s], s1)
+			seats[s.String()] = append(seats[s.String()], s1)
 		}
 
 		log.Printf("seat map details by section %s:\n %+v\n", s, seats)

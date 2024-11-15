@@ -1,12 +1,33 @@
 package inmemoryrepository
 
-import "github.com/codebind-luna/booking-service/internal/domain/models"
+import (
+	"errors"
 
-func (ir *InMemoryRepository) ModifySeat(user *models.User) error {
+	"github.com/codebind-luna/booking-service/internal/domain/models"
+)
+
+var (
+	ErrSeatNotFound            = errors.New("seat not found")
+	ErrSeatNotAvailableAnymore = errors.New("sorry requested seat is not available")
+)
+
+func (ir *InMemoryRepository) isValidSeat(seatNo int) bool {
+	noOfSeatsEachSection := ir.seatM.Cols()
+	seatNo -= 1
+
+	return 0 <= seatNo && seatNo < noOfSeatsEachSection
+}
+
+func (ir *InMemoryRepository) ModifySeat(email string, section string, seatNo int) error {
 	ir.mu.Lock()
 	defer ir.mu.Unlock()
 
-	u, exists := ir.users[user.Email()]
+	s, parserErr := models.ParseSection(section)
+	if parserErr != nil {
+		return parserErr
+	}
+
+	u, exists := ir.users[email]
 	if !exists {
 		return ErrUserNotFound
 	}
@@ -16,18 +37,23 @@ func (ir *InMemoryRepository) ModifySeat(user *models.User) error {
 		return ErrNoBookingFoundForUser
 	}
 
-	spot, spotErr := ir.allocateSeat()
+	seatIdx := seatNo - 1
 
-	if spotErr != nil {
-		return spotErr
+	if !ir.isValidSeat(seatIdx) {
+		return ErrSeatNotFound
 	}
 
-	t.Seat().SetUser(nil)
-	t.Seat().SetStatus(models.Available)
+	spot := ir.seatM.Seats()[s.EnumIndex()][seatIdx]
 
-	spot.SetUser(u)
-	t.SetUser(u)
-	t.SetSeat(spot)
+	if spot.Status() == models.Available {
+		t.Seat().SetUser(nil)
+		t.Seat().SetStatus(models.Available)
 
-	return nil
+		spot.SetStatus(models.Booked)
+		spot.SetUser(u)
+		t.SetSeat(spot)
+		return nil
+	}
+
+	return ErrSeatNotAvailableAnymore
 }

@@ -56,7 +56,7 @@ message Seat{
 
 // ViewSeatMapRequest - Message for the view seat map request
 message ViewSeatMapRequest{
-    string section = 1; // request to view by section
+    Section section = 1; // request to view by section
 }
 
 // ViewSeatMapResponse - Message for the view seat map response
@@ -71,11 +71,13 @@ message User {
     string first_name = 1;
     string last_name =  2;
     string email = 3;
-  }
+}
 
 // ModifySeatRequest - Message to modify a seat for user request
 message ModifySeatRequest{
     string email = 1;
+    Section section = 2;
+    int32 seat_no = 3;
 }
 
 // ModifySeatResponse - Message to modify a seat for user response

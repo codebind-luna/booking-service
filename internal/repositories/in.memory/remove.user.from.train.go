@@ -2,11 +2,11 @@ package inmemoryrepository
 
 import "github.com/codebind-luna/booking-service/internal/domain/models"
 
-func (ir *InMemoryRepository) RemoveUser(user *models.User) error {
+func (ir *InMemoryRepository) RemoveUser(email string) error {
 	ir.mu.Lock()
 	defer ir.mu.Unlock()
 
-	u, exists := ir.users[user.Email()]
+	u, exists := ir.users[email]
 	if !exists {
 		return ErrUserNotFound
 	}

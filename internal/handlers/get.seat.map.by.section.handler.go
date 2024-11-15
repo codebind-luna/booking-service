@@ -15,7 +15,7 @@ const (
 )
 
 func (h *ticketServiceHandlers) ViewSeatMap(ctx context.Context, vsm *bookingv1.ViewSeatMapRequest) (*bookingv1.ViewSeatMapResponse, error) {
-	seats, err := h.svc.ViewSeatAllocation(ctx, vsm.GetSection())
+	seats, err := h.svc.ViewSeatMap(ctx, vsm.GetSection().String())
 
 	s := []*bookingv1.Seat{}
 	vsmResponse := &bookingv1.ViewSeatMapResponse{}

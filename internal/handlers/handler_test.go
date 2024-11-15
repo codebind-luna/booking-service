@@ -208,13 +208,8 @@ func TestTicketService_ViewSeatMap(t *testing.T) {
 	seatNo := receipt.GetDetails().GetSeatNo()
 
 	res, sErr := c.ViewSeatMap(ctx, &bookingv1.ViewSeatMapRequest{
-		Section: section.String(),
+		Section: section,
 	})
-
-	// sectionIndexMap := map[bookingv1.Section]int{
-	// 	bookingv1.Section_SECTION_A: 0,
-	// 	bookingv1.Section_SECTION_B: 1,
-	// }
 
 	// Assert that there were no errors and that the response is as expected
 	assert.NoError(t, sErr, "Expected no error, but got one")
