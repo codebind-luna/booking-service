@@ -23,6 +23,9 @@ func (h *ticketServiceHandlers) PurchaseTicket(ctx context.Context, pr *bookingv
 		if errors.Is(err, exceptions.ErrNoSeatsAvailable) {
 			return nil, status.New(codes.FailedPrecondition, "No seats available").Err()
 		}
+		if errors.Is(err, exceptions.ErrUserHasPurchasedTicketAlready) {
+			return nil, status.New(codes.ResourceExhausted, "Already purchased a ticket").Err()
+		}
 
 		return nil, status.New(codes.Unknown, "some unknow error happened").Err()
 	}

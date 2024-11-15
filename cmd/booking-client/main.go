@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"math/rand"
+	"strings"
 	"time"
 
 	bookingv1 "github.com/codebind-luna/booking-service/gen/go/booking/v1"
@@ -61,15 +63,41 @@ type purchaseDetails struct {
 	p     float64
 }
 
+const letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+const domains = "com net org io co"
+
+// generateRandomString generates a random string of a given length
+func generateRandomString(length int) string {
+	rand.New(rand.NewSource(time.Now().UnixNano()))
+	var sb strings.Builder
+	for i := 0; i < length; i++ {
+		sb.WriteByte(letters[rand.Intn(len(letters))])
+	}
+	return sb.String()
+}
+
+// generateRandomEmail generates a random email address
+func generateRandomEmail() string {
+	username := generateRandomString(10)                // Random username
+	domainName := generateRandomString(5)               // Random domain name
+	domainExtension := domains[rand.Intn(len(domains))] // Random domain extension
+	return fmt.Sprintf("%s@%s.%s", username, domainName, domainExtension)
+}
+
 var (
 	details purchaseDetails = purchaseDetails{
-		email: "john@gmail.com",
+		email: generateRandomEmail(),
 		fn:    "John",
 		ln:    "Smith",
 		fc:    "New York",
 		tc:    "New Jersey",
 		p:     20.00,
 	}
+)
+
+var (
+	section bookingv1.Section
+	seatNo  int
 )
 
 func (bsc *BookingServiceClient) PurchaseTicket() {
@@ -107,6 +135,9 @@ func (bsc *BookingServiceClient) GetReceipt() {
 		bsc.logger.Fatalf("failed to get receipt %v", rErr)
 	}
 
+	section = res.GetDetails().Section
+	seatNo = int(res.GetDetails().GetSeatNo())
+
 	bsc.logger.Printf("output get receipt:\n %+v", res)
 }
 
@@ -139,10 +170,14 @@ func (bsc *BookingServiceClient) ModifySeat() {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 
+	seat := 1
+	if seatNo == 1 {
+		seat = 2
+	}
 	res, err := bsc.client.ModifySeat(ctx, &bookingv1.ModifySeatRequest{
 		Email:   details.email,
-		Section: bookingv1.Section_SECTION_A,
-		SeatNo:  9,
+		Section: section,
+		SeatNo:  int32(seat),
 	})
 
 	if err != nil {
