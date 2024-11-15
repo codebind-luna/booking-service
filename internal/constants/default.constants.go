@@ -6,6 +6,7 @@ const (
 	MinPort                           int    = 1024
 	MaxPort                           int    = 65535
 	DefaultShutdownContextWaitSeconds        = 5
+	MinSeats                                 = 10
 )
 
 const (

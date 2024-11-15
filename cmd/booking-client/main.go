@@ -2,130 +2,181 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"time"
 
 	bookingv1 "github.com/codebind-luna/booking-service/gen/go/booking/v1"
+	"github.com/codebind-luna/booking-service/internal/config"
+	"github.com/codebind-luna/booking-service/pkg/logger"
+	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
 
-func main() {
-	addr := "localhost:50051"
+type BookingServiceClient struct {
+	logger *logrus.Logger
+	client bookingv1.TicketServiceClient
+	conn   *grpc.ClientConn
+}
 
-	// Set up a connection to the server.
-	conn, err := grpc.NewClient(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
-	if err != nil {
-		log.Fatalf("Failed to connect: %v", err)
+func NewBookingServiceClient() (*BookingServiceClient, error) {
+	config, createConfigErr := config.NewConfig()
+
+	if createConfigErr != nil {
+		return nil, createConfigErr
 	}
-	defer conn.Close()
-	c := bookingv1.NewTicketServiceClient(conn)
 
+	logger := logger.ConfigureLogging()
+
+	addr := fmt.Sprintf("%s:%d", config.Server.Host, config.Server.Port)
+	conn, err := grpc.NewClient(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to connect: %v", err)
+	}
+
+	client := bookingv1.NewTicketServiceClient(conn)
+
+	return &BookingServiceClient{
+		client: client,
+		conn:   conn,
+		logger: logger,
+	}, nil
+}
+
+// Close closes the gRPC connection
+func (bsc *BookingServiceClient) Close() {
+	if err := bsc.conn.Close(); err != nil {
+		bsc.logger.Fatalf("Error closing connection: %v", err)
+	}
+}
+
+type purchaseDetails struct {
+	email string
+	fn    string
+	ln    string
+	fc    string
+	tc    string
+	p     float64
+}
+
+var (
+	details purchaseDetails = purchaseDetails{
+		email: "john@gmail.com",
+		fn:    "John",
+		ln:    "Smith",
+		fc:    "New York",
+		tc:    "New Jersey",
+		p:     20.00,
+	}
+)
+
+func (bsc *BookingServiceClient) PurchaseTicket() {
+	// Call the SayHello method
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 
-	details := []struct {
-		email string
-		fn    string
-		ln    string
-	}{
-		{
-			email: "john@gmail.com",
-			fn:    "John",
-			ln:    "Smith",
+	res, err := bsc.client.PurchaseTicket(ctx, &bookingv1.PurchaseTicketRequest{
+		User: &bookingv1.User{
+			Email:     details.email,
+			FirstName: details.fn,
+			LastName:  details.ln,
 		},
-		{
-			email: "adam@gmail.com",
-			fn:    "Adam",
-			ln:    "Lesiuk",
-		},
-		{
-			email: "Brian@gmail.com",
-			fn:    "Brian",
-			ln:    "Nwidge",
-		},
-		{
-			email: "andrew@gmail.com",
-			fn:    "Andrew",
-			ln:    "Cahil",
-		},
-		{
-			email: "Shireen@gmail.com",
-			fn:    "Shireen",
-			ln:    "Bailey",
-		},
-		{
-			email: "Matt@gmail.com",
-			fn:    "Matt",
-			ln:    "Earnest",
-		},
+		FromCity: details.fc,
+		ToCity:   details.tc,
+		Price:    float32(details.p),
+	})
+
+	if err != nil {
+		bsc.logger.Fatalf("Received error: %+v", err)
 	}
 
-	for _, d := range details {
+	bsc.logger.Infof("output purchase ticket:\n %+v", res)
+}
 
-		r, err := c.PurchaseTicket(ctx, &bookingv1.PurchaseTicketRequest{
-			User: &bookingv1.User{
-				Email:     d.email,
-				FirstName: d.fn,
-				LastName:  d.ln,
-			},
-			FromCity: "New York",
-			ToCity:   "New Jersey",
-			Price:    20.00,
-		})
-		if err != nil {
-			log.Printf("Received error: %v\n", err)
-			return
-		}
-		log.Printf("Received response: %s\n", r.Message)
-		log.Printf("Booking ID: %s\n", r.BookingId)
+func (bsc *BookingServiceClient) GetReceipt() {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
 
-		receipt, rErr := c.GetReceipt(ctx, &bookingv1.GetReceiptRequest{
-			Email: d.email,
-		})
+	res, rErr := bsc.client.GetReceipt(ctx, &bookingv1.GetReceiptRequest{
+		Email: details.email,
+	})
 
-		if rErr != nil {
-			log.Printf("failed to get receipt for user with email %s\n: %v\n", d.email, rErr)
-			return
-		}
-
-		log.Printf("receipt of the ticket details for user with email %s\n: %+v\n", d.email, receipt.Details)
+	if rErr != nil {
+		bsc.logger.Fatalf("failed to get receipt %v", rErr)
 	}
 
-	ss := []bookingv1.Section{bookingv1.Section_SECTION_A, bookingv1.Section_SECTION_B}
+	bsc.logger.Printf("output get receipt:\n %+v", res)
+}
 
-	for _, s := range ss {
-		seatM, sErr := c.ViewSeatMap(ctx, &bookingv1.ViewSeatMapRequest{
-			Section: s,
-		})
+func (bsc *BookingServiceClient) ViewSeatMap() {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
 
-		if sErr != nil {
-			log.Printf("failed to get seat map by section %s\n: %v\n", s, sErr)
-			return
-		}
+	res, sErr := bsc.client.ViewSeatMap(ctx, &bookingv1.ViewSeatMapRequest{
+		Section: bookingv1.Section_SECTION_A,
+	})
 
-		seats := map[string][]struct {
-			user   string
-			seatNo int
-			status string
-		}{}
-
-		for _, st := range seatM.Seats {
-			s1 := struct {
-				user   string
-				seatNo int
-				status string
-			}{
-
-				seatNo: int(st.GetSeatNo()),
-				status: st.GetStatus().String(),
-			}
-			if st.GetEmail() != "" {
-				s1.user = st.GetEmail()
-			}
-			seats[s.String()] = append(seats[s.String()], s1)
-		}
-
-		log.Printf("seat map details by section %s:\n %+v\n", s, seats)
+	if sErr != nil {
+		bsc.logger.Fatalf("failed to view seat map %v", sErr)
 	}
+
+	bsc.logger.Printf("output view seat map for:%s\n %+v", bookingv1.Section_SECTION_A.String(), res)
+
+	res, sErr = bsc.client.ViewSeatMap(ctx, &bookingv1.ViewSeatMapRequest{
+		Section: bookingv1.Section_SECTION_B,
+	})
+
+	if sErr != nil {
+		bsc.logger.Fatalf("failed to view seat map for:%s\n %v", bookingv1.Section_SECTION_B.String(), sErr)
+	}
+
+	bsc.logger.Printf("output view seat map for:%s\n %+v", bookingv1.Section_SECTION_B.String(), res)
+}
+
+func (bsc *BookingServiceClient) ModifySeat() {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+
+	res, err := bsc.client.ModifySeat(ctx, &bookingv1.ModifySeatRequest{
+		Email:   details.email,
+		Section: bookingv1.Section_SECTION_A,
+		SeatNo:  9,
+	})
+
+	if err != nil {
+		bsc.logger.Fatalf("failed to modify seat for user with email:%s\n %v", details.email, err)
+	}
+
+	bsc.logger.Printf("output modify seat for user with emaail:%s\n %+v", details.email, res)
+}
+
+func (bsc *BookingServiceClient) RemoveUser() {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+
+	res, err := bsc.client.RemoveUser(ctx, &bookingv1.RemoveUserRequest{
+		Email: details.email,
+	})
+
+	if err != nil {
+		bsc.logger.Fatalf("failed to remove user with email %s from train:\n %v", details.email, err)
+	}
+
+	bsc.logger.Printf("output remove user with email %s from train:\n %+v", details.email, res)
+}
+
+func main() {
+	client, err := NewBookingServiceClient()
+	if err != nil {
+		log.Fatalf("could not create client: %v", err)
+	}
+	defer client.Close()
+
+	client.PurchaseTicket()
+	client.GetReceipt()
+	client.ViewSeatMap()
+	client.ModifySeat()
+	client.RemoveUser()
 }

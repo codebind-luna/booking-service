@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	"os"
+	"strconv"
 
 	"github.com/codebind-luna/booking-service/internal/constants"
 	"github.com/joho/godotenv"
@@ -61,7 +62,19 @@ func NewConfig() (*Config, error) {
 
 	seats := os.Getenv(constants.EnvInmemorySeats)
 	if seats == "" {
+		seatVal, _ := strconv.Atoi(viper.GetString("inmemory.seats"))
+
+		if seatVal < constants.MinSeats {
+			return nil, fmt.Errorf("invalid in memory seats value: %d must be greater than %d", seatVal, constants.MinSeats)
+		}
+
 		os.Setenv(constants.EnvInmemorySeats, viper.GetString("inmemory.seats"))
+	} else {
+		seatVal, _ := strconv.Atoi(seats)
+
+		if seatVal < constants.MinSeats {
+			return nil, fmt.Errorf("invalid in memory seats value: %d must be greater than %d", seatVal, constants.MinSeats)
+		}
 	}
 
 	logLevel := os.Getenv(constants.EnvLogLevel)
