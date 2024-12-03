@@ -8,7 +8,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/codebind-luna/booking-service/internal/app"
+	"github.com/codebind-luna/booking-service/internal/app/services/ticket"
 	"github.com/codebind-luna/booking-service/internal/config"
 	"github.com/codebind-luna/booking-service/internal/constants"
 	"github.com/codebind-luna/booking-service/internal/domain"
@@ -37,7 +37,11 @@ func main() {
 		logger.Fatal(rErr.Error())
 	}
 
-	server := transport.NewServer(logger, config.Server.Host, config.Server.Port, handlers.NewTicketService(app.NewService(logger, repo)))
+	server := transport.NewServer(
+		logger,
+		config.Server.Host,
+		config.Server.Port,
+		handlers.NewTicketService(ticket.NewService(logger, repo)))
 
 	server.Start()
 

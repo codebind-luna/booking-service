@@ -3,7 +3,6 @@ package handlers
 import (
 	"context"
 	"errors"
-	"fmt"
 
 	bookingv1 "github.com/codebind-luna/booking-service/gen/go/booking/v1"
 	"github.com/codebind-luna/booking-service/internal/constants"
@@ -36,7 +35,7 @@ func (h *ticketServiceHandlers) GetReceipt(ctx context.Context, rr *bookingv1.Ge
 			FirstName: ticket.User().FirstName(),
 			LastName:  ticket.User().LastName(),
 		},
-		Price:   fmt.Sprintf("$%.2f", ticket.PricePaid()),
+		Price:   float32(ticket.PricePaid()),
 		Section: ticket.Seat().Section().Section(),
 		SeatNo:  int32(ticket.Seat().SeatNo()),
 	}

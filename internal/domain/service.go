@@ -13,3 +13,8 @@ type Service interface {
 	GetReceipt(ctx context.Context, bookingID string) (*models.Ticket, error)
 	ViewSeatMap(ctx context.Context, section string) ([]*models.Seat, error)
 }
+
+type Coupon interface {
+	Valid(ctx context.Context) bool
+	ApplyCoupon(ctx context.Context, price float64) float64
+}

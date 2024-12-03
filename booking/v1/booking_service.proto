@@ -18,7 +18,7 @@ message Receipt {
     string from_city = 2;     // Departure city
     string to_city = 3;       // Destination city
     User user = 4;            // User info
-    string price = 5;          // Ticket price
+    float price = 5;          // Ticket price
     Section section = 6; // Section of seat allocated
     int32 seat_no = 7; // seat no of seat allocated
 }
@@ -45,6 +45,12 @@ enum Section {
     SECTION_UNSPECIFIED = 0;  // Default value
     SECTION_A = 1;
     SECTION_B = 2;
+}
+
+enum Discount {
+    DISCOUNT_UNSPECIFIED = 0;
+    DISCOUNT_FIVE = 1;
+    DISCOUNT_TEN = 2;
 }
 
 message Seat{
@@ -103,6 +109,7 @@ message PurchaseTicketRequest {
     string from_city = 2;
     string to_city = 3;
     float price = 4;
+    Discount discount = 5;
 }
 
 // PurchaseTicketResponse - Message for the ticket purchase response

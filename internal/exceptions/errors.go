@@ -9,4 +9,6 @@ var (
 	ErrSeatNotFound                  = errors.New("seat not found")
 	ErrSeatNotAvailableAnymore       = errors.New("sorry requested seat is not available")
 	ErrUserHasPurchasedTicketAlready = errors.New("already purchased ticket")
+	ErrInvalidCouponCode             = errors.New("coupon code is not valid")
+	ErrCouponCodeExpired             = errors.New("coupon code expired")
 )

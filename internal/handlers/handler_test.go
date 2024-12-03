@@ -2,14 +2,13 @@ package handlers
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"net"
 	"testing"
 	"time"
 
 	bookingv1 "github.com/codebind-luna/booking-service/gen/go/booking/v1"
-	"github.com/codebind-luna/booking-service/internal/app"
+	"github.com/codebind-luna/booking-service/internal/app/services/ticket"
 	"github.com/codebind-luna/booking-service/internal/constants"
 	"github.com/codebind-luna/booking-service/internal/domain"
 	"github.com/codebind-luna/booking-service/internal/repositories"
@@ -49,7 +48,7 @@ func setup(t *testing.T) (context.Context, *grpc.ClientConn, bookingv1.TicketSer
 	}
 
 	// Initialize the service and register it with the server
-	svc := NewTicketService(app.NewService(logger, repo))
+	svc := NewTicketService(ticket.NewService(logger, repo))
 	bookingv1.RegisterTicketServiceServer(srv, svc) // Register the service on the server
 
 	// Start the server in a goroutine
@@ -167,7 +166,7 @@ func TestTicketService_GetReceipt(t *testing.T) {
 	assert.Equal(t, details[0].ln, receipt.GetDetails().GetUser().GetLastName())
 	assert.Equal(t, details[0].fc, receipt.GetDetails().GetFromCity())
 	assert.Equal(t, details[0].tc, receipt.GetDetails().GetToCity())
-	assert.Equal(t, fmt.Sprintf("$%.2f", details[0].p), receipt.GetDetails().GetPrice())
+	assert.Equal(t, details[0].p, receipt.GetDetails().GetPrice())
 	assert.NotEmpty(t, receipt.GetDetails().GetBookingId(), "Expected booking id to be not empty")
 }
 

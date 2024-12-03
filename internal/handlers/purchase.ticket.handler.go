@@ -16,8 +16,16 @@ func (h *ticketServiceHandlers) PurchaseTicket(ctx context.Context, pr *bookingv
 	fromCity := pr.GetFromCity()
 	toCity := pr.GetToCity()
 	price := pr.GetPrice()
+	discount := pr.GetDiscount()
 
-	bookingID, err := h.svc.PurchaseTicket(ctx, user.GetEmail(), user.GetFirstName(), user.GetLastName(), fromCity, toCity, float64(price))
+	discountedPrice, disErr := h.applyCoupon(ctx, float64(price), discount.String())
+	if disErr != nil {
+		return nil, status.New(codes.InvalidArgument, disErr.Error()).Err()
+	}
+
+	bookingID, err := h.svc.PurchaseTicket(ctx,
+		user.GetEmail(), user.GetFirstName(), user.GetLastName(),
+		fromCity, toCity, *discountedPrice)
 
 	if err != nil {
 		if errors.Is(err, exceptions.ErrNoSeatsAvailable) {
@@ -36,4 +44,25 @@ func (h *ticketServiceHandlers) PurchaseTicket(ctx context.Context, pr *bookingv
 	r.Success = true
 
 	return r, nil
+}
+
+func (h *ticketServiceHandlers) applyCoupon(ctx context.Context, price float64, code string) (*float64, error) {
+	if code == bookingv1.Discount_DISCOUNT_UNSPECIFIED.String() {
+		return &price, nil
+	}
+
+	coupon, ok := h.coupons[code]
+
+	if !ok {
+		return nil, exceptions.ErrInvalidCouponCode
+	}
+
+	var discountedPrice float64
+
+	if coupon.Valid(ctx) {
+		discountedPrice = coupon.ApplyCoupon(ctx, float64(price))
+	} else {
+		return nil, exceptions.ErrCouponCodeExpired
+	}
+	return &discountedPrice, nil
 }

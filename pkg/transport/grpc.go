@@ -10,6 +10,8 @@ import (
 	bookingv1 "github.com/codebind-luna/booking-service/gen/go/booking/v1"
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/health"
+	healthv1 "google.golang.org/grpc/health/grpc_health_v1"
 )
 
 type Server interface {
@@ -35,9 +37,13 @@ func NewServer(logger *log.Logger, host string, port int, svc bookingv1.TicketSe
 
 	// Create a new gRPC server
 	s := grpc.NewServer()
+	h := health.NewServer()
+
+	h.SetServingStatus(bookingv1.TicketService_ServiceDesc.ServiceName, healthv1.HealthCheckResponse_SERVING)
 
 	// Register the Ticket service with the server
 	bookingv1.RegisterTicketServiceServer(s, svc)
+	healthv1.RegisterHealthServer(s, h)
 
 	return &serverImp{
 		logger: logger,
